@@ -51,7 +51,7 @@ switch (command) {
         let unzipped = zlib.unzipSync(zipcontent).toString();
         const content = unzipped.split('\0').at(1)
         if (!content) {
-          throw new Error(`File ${fileName} not found`);
+          throw new Error(`content ${fileName} not found`);
         }
         process.stdout.write(content)
         break;
@@ -63,14 +63,15 @@ switch (command) {
 
   case Commands.HashObject:
     const content = args[1];
+    const uncompresed = `blob ${content.length}\0${content}`;
     const hasher = createHash('sha1');
-    const _hash = hasher.update(`blob ${content.length}\0${content}`).digest('hex').trim();
+    const _hash = hasher.update(uncompresed).digest('hex').trim();
 
     if (getFlags()?.includes('w')) {
       const hashPrefix = getHashPrefix(_hash);
       const fileName = getFileNameFromHash(_hash);
       fs.mkdirSync(`.git/objects/${hashPrefix}`, { recursive: true });
-      const compressed = zlib.gzipSync(content);
+      const compressed = zlib.deflateSync(uncompresed);
       fs.writeFileSync(`.git/objects/${hashPrefix}/${fileName}`, compressed);
     }
 
