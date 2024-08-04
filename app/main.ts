@@ -103,7 +103,7 @@ switch (command) {
     const treeBuffer = zlib.unzipSync(treeContent).toString();
     const treeContentBlock = treeBuffer.split('\0').at(1)
 
-    const treeContentBlocks = treeContentBlock?.split('\0').map(block => block.split(' ').at(-1))
+    const treeContentBlocks = treeContentBlock?.split('\0').flatMap(block => block.split(' ').at(-1))
 
     console.log({ treeContentBlocks })
     break
