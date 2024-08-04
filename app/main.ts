@@ -62,8 +62,9 @@ switch (command) {
     break
 
   case Commands.HashObject:
-    const content = args[1];
-    const uncompresed = `blob ${content.length}\0${content}`;
+    const contentFilePath = args[2];
+    const content = fs.readFileSync(contentFilePath);
+    const uncompresed = Buffer.from(`blob ${content.length}\0${content}`);
     const hasher = createHash('sha1');
     const _hash = hasher.update(uncompresed).digest('hex').trim();
 
