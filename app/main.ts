@@ -102,8 +102,10 @@ switch (command) {
     const treeContent = fs.readFileSync(getFilePath(treeSha));
     const treeBuffer = zlib.unzipSync(treeContent).toString();
     const treeContentBlock = treeBuffer.split('\0').at(1)
-    console.log({ treeContentBlock })
 
+    const treeContentBlocks = treeContentBlock?.split('\0').map(block => block.split(' '))
+
+    console.log({ treeContentBlocks })
     break
   default:
     throw new Error(`Unknown command ${command}`);
