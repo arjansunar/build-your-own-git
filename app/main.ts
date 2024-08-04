@@ -18,6 +18,10 @@ enum FileModes {
   SymlinkFile = 120000
 }
 
+function getFlag() {
+  return args.at(1)
+}
+
 function getFlags() {
   return args.at(1)?.split('')
 }
@@ -99,13 +103,15 @@ switch (command) {
     if (!treeSha) {
       throw new Error(`No path or sha provided ${treeSha}`);
     }
-    const treeContent = fs.readFileSync(getFilePath(treeSha));
-    const treeBuffer = zlib.unzipSync(treeContent).toString();
-    const treeContentBlock = treeBuffer.split('\0').at(1)
 
-    const treeContentBlocks = treeContentBlock?.split('\0').flatMap(block => block.split(' ').at(-1))
-
-    console.log({ treeContentBlocks })
+    if (getFlag() == '--name-only') {
+      const treeContent = fs.readFileSync(getFilePath(treeSha));
+      const treeBuffer = zlib.unzipSync(treeContent).toString();
+      const treeContentBlock = treeBuffer.split('\0').at(1)
+      const treeContentBlocks = treeContentBlock?.split('\0').flatMap(block => block.split(' ').at(-1))
+      const formattedNames = treeContentBlocks?.join('\n')
+      process.stdout.write(formattedNames ?? "")
+    }
     break
   default:
     throw new Error(`Unknown command ${command}`);
