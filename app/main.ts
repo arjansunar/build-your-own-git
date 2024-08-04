@@ -63,14 +63,14 @@ switch (command) {
 
   case Commands.HashObject:
     const content = args[1];
-    const compressed = zlib.gzipSync(content);
     const hasher = createHash('sha1');
-    const _hash = hasher.update(content).digest('hex').trim();
+    const _hash = hasher.update(`blob ${content.length}\0${content}`).digest('hex').trim();
 
     if (getFlags()?.includes('w')) {
       const hashPrefix = getHashPrefix(_hash);
       const fileName = getFileNameFromHash(_hash);
       fs.mkdirSync(`.git/objects/${hashPrefix}`, { recursive: true });
+      const compressed = zlib.gzipSync(content);
       fs.writeFileSync(`.git/objects/${hashPrefix}/${fileName}`, compressed);
     }
 
