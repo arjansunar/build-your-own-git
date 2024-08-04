@@ -1,5 +1,6 @@
 import * as fs from 'fs';
 import * as zlib from 'zlib'
+import { createHash } from 'crypto'
 
 const args = process.argv.slice(2);
 const command = args[0];
@@ -7,6 +8,19 @@ const command = args[0];
 enum Commands {
   Init = "init",
   CatFile = "cat-file",
+  HashObject = "hash-object",
+}
+
+function getFlags() {
+  return args.at(1)?.split('')
+}
+
+function getHashPrefix(hash: string) {
+  return hash.substring(0, 2)
+}
+
+function getFileNameFromHash(hash: string) {
+  return hash.substring(2)
 }
 
 switch (command) {
@@ -31,8 +45,8 @@ switch (command) {
         if (hash?.length !== 40) {
           throw new Error(`Invalid hash ${hash}. Must be 40 chars long`);
         }
-        const hashPrefix = hash.substring(0, 2);
-        const fileName = hash.substring(2);
+        const hashPrefix = getHashPrefix(hash);
+        const fileName = getFileNameFromHash(hash);
         const zipcontent = fs.readFileSync(`.git/objects/${hashPrefix}/${fileName}`);
         let unzipped = zlib.unzipSync(zipcontent).toString();
         const content = unzipped.split('\0').at(1)
@@ -45,6 +59,22 @@ switch (command) {
       default:
         throw new Error(`Unknown flag ${flag}`);
     }
+    break
+
+  case Commands.HashObject:
+    const content = args[1];
+    const compressed = zlib.gzipSync(content);
+    const hasher = createHash('sha1');
+    const _hash = hasher.update(content).digest('hex').trim();
+
+    if (getFlags()?.includes('w')) {
+      const hashPrefix = getHashPrefix(_hash);
+      const fileName = getFileNameFromHash(_hash);
+      fs.mkdirSync(`.git/objects/${hashPrefix}`, { recursive: true });
+      fs.writeFileSync(`.git/objects/${hashPrefix}/${fileName}`, compressed);
+    }
+
+    process.stdout.write(_hash)
     break
   default:
     throw new Error(`Unknown command ${command}`);
