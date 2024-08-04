@@ -9,10 +9,21 @@ enum Commands {
   Init = "init",
   CatFile = "cat-file",
   HashObject = "hash-object",
+  LsTree = "ls-tree"
+}
+
+enum FileModes {
+  File = 100644,
+  ExFile = 100755,
+  SymlinkFile = 120000
 }
 
 function getFlags() {
   return args.at(1)?.split('')
+}
+
+function getPathOrSha() {
+  return args.at(2)
 }
 
 function getHashPrefix(hash: string) {
@@ -21,6 +32,14 @@ function getHashPrefix(hash: string) {
 
 function getFileNameFromHash(hash: string) {
   return hash.substring(2)
+}
+
+function getFolderPath(hash: string) {
+  return `.git/objects/${getHashPrefix(hash)}`
+}
+
+function getFilePath(hash: string) {
+  return `.git/objects/${getHashPrefix(hash)}/${getFileNameFromHash(hash)}`
 }
 
 switch (command) {
@@ -45,13 +64,11 @@ switch (command) {
         if (hash?.length !== 40) {
           throw new Error(`Invalid hash ${hash}. Must be 40 chars long`);
         }
-        const hashPrefix = getHashPrefix(hash);
-        const fileName = getFileNameFromHash(hash);
-        const zipcontent = fs.readFileSync(`.git/objects/${hashPrefix}/${fileName}`);
+        const zipcontent = fs.readFileSync(getFilePath(hash));
         let unzipped = zlib.unzipSync(zipcontent).toString();
         const content = unzipped.split('\0').at(1)
         if (!content) {
-          throw new Error(`content ${fileName} not found`);
+          throw new Error(`content not found`);
         }
         process.stdout.write(content)
         break;
@@ -69,14 +86,24 @@ switch (command) {
     const _hash = hasher.update(uncompresed).digest('hex').trim();
 
     if (getFlags()?.includes('w')) {
-      const hashPrefix = getHashPrefix(_hash);
-      const fileName = getFileNameFromHash(_hash);
-      fs.mkdirSync(`.git/objects/${hashPrefix}`, { recursive: true });
+      fs.mkdirSync(getFolderPath(_hash), { recursive: true });
       const compressed = zlib.deflateSync(uncompresed);
-      fs.writeFileSync(`.git/objects/${hashPrefix}/${fileName}`, compressed);
+      fs.writeFileSync(getFilePath(_hash), compressed);
     }
 
     process.stdout.write(_hash)
+    break
+
+  case Commands.LsTree:
+    const treeSha = getPathOrSha()
+    if (!treeSha) {
+      throw new Error(`No path or sha provided ${treeSha}`);
+    }
+    const treeContent = fs.readFileSync(getFilePath(treeSha));
+    const treeBuffer = zlib.unzipSync(treeContent).toString();
+    const treeContentBlock = treeBuffer.split('\0').at(1)
+    console.log({ treeContentBlock })
+
     break
   default:
     throw new Error(`Unknown command ${command}`);
