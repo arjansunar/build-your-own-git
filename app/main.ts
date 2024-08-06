@@ -1,6 +1,7 @@
 import * as fs from 'fs';
 import * as zlib from 'zlib'
 import { createHash } from 'crypto'
+import { parseTreeContentAndGetNames } from './utils';
 
 const args = process.argv.slice(2);
 const command = args[0];
@@ -106,11 +107,8 @@ switch (command) {
 
     if (getFlag() == '--name-only') {
       const treeContent = fs.readFileSync(getFilePath(treeSha));
-      console.log({ treeContent })
       const treeBuffer = zlib.unzipSync(treeContent).toString();
-      const treeContentBlock = treeBuffer.split('\0').at(1)
-      const treeContentBlocks = treeContentBlock?.split('\0').flatMap(block => block.split(' ').at(-1))
-      const formattedNames = treeContentBlocks?.join('\n')
+      const formattedNames = parseTreeContentAndGetNames(treeBuffer)
       process.stdout.write(formattedNames ?? "")
     }
     break
