@@ -27,7 +27,7 @@ function getFlags() {
 }
 
 function getPathOrSha() {
-  return args.at(2)
+  return args.at(-1)
 }
 
 function getHashPrefix(hash: string) {
@@ -106,6 +106,7 @@ switch (command) {
 
     if (getFlag() == '--name-only') {
       const treeContent = fs.readFileSync(getFilePath(treeSha));
+      console.log({ treeContent })
       const treeBuffer = zlib.unzipSync(treeContent).toString();
       const treeContentBlock = treeBuffer.split('\0').at(1)
       const treeContentBlocks = treeContentBlock?.split('\0').flatMap(block => block.split(' ').at(-1))
