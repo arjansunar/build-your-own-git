@@ -1,7 +1,7 @@
-import * as fs from 'fs';
-import * as zlib from 'zlib'
-import { createHash } from 'crypto'
-import { parseTreeContentAndGetNames } from './utils';
+import * as fs from "fs";
+import * as zlib from "zlib";
+import { createHash } from "crypto";
+import { parseTreeContentAndGetNames } from "./utils";
 
 const args = process.argv.slice(2);
 const command = args[0];
@@ -10,41 +10,56 @@ enum Commands {
   Init = "init",
   CatFile = "cat-file",
   HashObject = "hash-object",
-  LsTree = "ls-tree"
+  LsTree = "ls-tree",
+  WriteTree = "write-tree",
 }
 
+const IGNORED_FILES = ["node_modules", ".git"];
 enum FileModes {
   File = 100644,
   ExFile = 100755,
-  SymlinkFile = 120000
+  SymlinkFile = 120000,
 }
 
 function getFlag() {
-  return args.at(1)
+  return args.at(1);
 }
 
 function getFlags() {
-  return args.at(1)?.split('')
+  return args.at(1)?.split("");
 }
 
 function getPathOrSha() {
-  return args.at(-1)
+  return args.at(-1);
 }
 
 function getHashPrefix(hash: string) {
-  return hash.substring(0, 2)
+  return hash.substring(0, 2);
 }
 
 function getFileNameFromHash(hash: string) {
-  return hash.substring(2)
+  return hash.substring(2);
 }
 
 function getFolderPath(hash: string) {
-  return `.git/objects/${getHashPrefix(hash)}`
+  return `.git/objects/${getHashPrefix(hash)}`;
 }
 
 function getFilePath(hash: string) {
-  return `.git/objects/${getHashPrefix(hash)}/${getFileNameFromHash(hash)}`
+  return `.git/objects/${getHashPrefix(hash)}/${getFileNameFromHash(hash)}`;
+}
+
+function hashObject(path: string) {
+  const content = fs.readFileSync(path);
+  const uncompresed = Buffer.from(`blob ${content.length}\0${content}`);
+  const hasher = createHash("sha1");
+  return {
+    hash: hasher.update(uncompresed).digest("hex").trim(),
+    uncompresed,
+    get compressed() {
+      return zlib.deflateSync(uncompresed);
+    },
+  };
 }
 
 switch (command) {
@@ -71,47 +86,66 @@ switch (command) {
         }
         const zipcontent = fs.readFileSync(getFilePath(hash));
         let unzipped = zlib.unzipSync(zipcontent).toString();
-        const content = unzipped.split('\0').at(1)
+        const content = unzipped.split("\0").at(1);
         if (!content) {
           throw new Error(`content not found`);
         }
-        process.stdout.write(content)
+        process.stdout.write(content);
         break;
 
       default:
         throw new Error(`Unknown flag ${flag}`);
     }
-    break
+    break;
 
   case Commands.HashObject:
     const contentFilePath = args[2];
-    const content = fs.readFileSync(contentFilePath);
-    const uncompresed = Buffer.from(`blob ${content.length}\0${content}`);
-    const hasher = createHash('sha1');
-    const _hash = hasher.update(uncompresed).digest('hex').trim();
-
-    if (getFlags()?.includes('w')) {
-      fs.mkdirSync(getFolderPath(_hash), { recursive: true });
-      const compressed = zlib.deflateSync(uncompresed);
-      fs.writeFileSync(getFilePath(_hash), compressed);
+    const hashObjRes = hashObject(contentFilePath);
+    if (getFlags()?.includes("w")) {
+      fs.mkdirSync(getFolderPath(hashObjRes.hash), { recursive: true });
+      fs.writeFileSync(getFilePath(hashObjRes.hash), hashObjRes.compressed);
     }
 
-    process.stdout.write(_hash)
-    break
+    process.stdout.write(hashObjRes.hash);
+    break;
 
   case Commands.LsTree:
-    const treeSha = getPathOrSha()
+    const treeSha = getPathOrSha();
     if (!treeSha) {
       throw new Error(`No path or sha provided ${treeSha}`);
     }
 
-    if (getFlag() == '--name-only') {
+    if (getFlag() == "--name-only") {
       const treeContent = fs.readFileSync(getFilePath(treeSha));
       const treeBuffer = zlib.unzipSync(treeContent).toString();
-      const formattedNames = parseTreeContentAndGetNames(treeBuffer)
-      process.stdout.write(formattedNames ?? "")
+      const formattedNames = parseTreeContentAndGetNames(treeBuffer);
+      process.stdout.write(formattedNames ?? "");
     }
-    break
+    break;
+  case Commands.WriteTree:
+    writeTree(process.cwd());
+
+    break;
   default:
     throw new Error(`Unknown command ${command}`);
+}
+
+function writeTree(path: string) {
+  const directories = fs.readdirSync(path);
+  for (const directory of directories) {
+    if (IGNORED_FILES.includes(directory)) {
+      continue;
+    }
+    const stats = fs.statSync(`${path}/${directory}`);
+
+    if (stats.isDirectory()) {
+      // TODO: write recursively tree object
+      console.log("Directory", directory, `${path}/${directory}`);
+      writeTree(`${path}/${directory}`);
+    }
+    if (stats.isFile()) {
+      const hashObjRes = hashObject(`${path}/${directory}`);
+      console.log("File", `${path}/${directory}`, hashObjRes.hash);
+    }
+  }
 }
