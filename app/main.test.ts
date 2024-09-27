@@ -19,6 +19,12 @@ test("Test commit tree command", () => {
     "Second commit",
     "3b18e512dba79e4c8300dd08aeb37f8e728b8dad",
   );
-  console.log({ output });
+  const hash = commitTree(
+    "5b825dc642cb6eb9a060e54bf8d69288fbee4904",
+    "Second commit",
+    "3b18e512dba79e4c8300dd08aeb37f8e728b8dad",
+  );
+
+  console.log({ output, hash });
   expect(true).toBe(true);
 });

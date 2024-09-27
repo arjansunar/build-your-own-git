@@ -146,6 +146,7 @@ export function commitTreeString(
   return `${commitTreeHeader(commitBody.length)}\n${commitBody}`;
 }
 export function commitTree(treeSha: string, message: string, parent: string) {
+  console.log({ treeSha, message, parent });
   const hasher = createHash("sha1");
   const blob = Buffer.from(commitTreeString(treeSha, message, parent));
   const hash = hasher.update(blob).digest("hex").trim();
