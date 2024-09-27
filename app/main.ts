@@ -11,6 +11,7 @@ enum Commands {
   HashObject = "hash-object",
   LsTree = "ls-tree",
   WriteTree = "write-tree",
+  CommitTree = "commit-tree",
 }
 
 function getFlag() {
@@ -105,6 +106,8 @@ switch (command) {
     const _hash = writeTree(process.cwd());
     process.stdout.write(_hash.hash);
 
+    break;
+  case Commands.CommitTree:
     break;
   default:
     throw new Error(`Unknown command ${command}`);
