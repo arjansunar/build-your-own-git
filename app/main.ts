@@ -1,7 +1,6 @@
 import * as fs from "fs";
 import * as zlib from "zlib";
-import { createHash } from "crypto";
-import { parseTreeContentAndGetNames } from "./utils";
+import { parseTreeContentAndGetNames, writeTree, hashObject } from "./utils";
 
 const args = process.argv.slice(2);
 const command = args[0];
@@ -14,12 +13,7 @@ enum Commands {
   WriteTree = "write-tree",
 }
 
-const IGNORED_FILES = ["node_modules", ".git"];
-enum FileModes {
-  File = 100644,
-  ExFile = 100755,
-  SymlinkFile = 120000,
-}
+
 
 function getFlag() {
   return args.at(1);
@@ -49,18 +43,7 @@ function getFilePath(hash: string) {
   return `.git/objects/${getHashPrefix(hash)}/${getFileNameFromHash(hash)}`;
 }
 
-function hashObject(path: string) {
-  const content = fs.readFileSync(path);
-  const uncompresed = Buffer.from(`blob ${content.length}\0${content}`);
-  const hasher = createHash("sha1");
-  return {
-    hash: hasher.update(uncompresed).digest("hex").trim(),
-    uncompresed,
-    get compressed() {
-      return zlib.deflateSync(uncompresed);
-    },
-  };
-}
+
 
 switch (command) {
   case Commands.Init:
@@ -130,22 +113,3 @@ switch (command) {
     throw new Error(`Unknown command ${command}`);
 }
 
-function writeTree(path: string) {
-  const directories = fs.readdirSync(path);
-  for (const directory of directories) {
-    if (IGNORED_FILES.includes(directory)) {
-      continue;
-    }
-    const stats = fs.statSync(`${path}/${directory}`);
-
-    if (stats.isDirectory()) {
-      // TODO: write recursively tree object
-      console.log("Directory", directory, `${path}/${directory}`);
-      writeTree(`${path}/${directory}`);
-    }
-    if (stats.isFile()) {
-      const hashObjRes = hashObject(`${path}/${directory}`);
-      console.log("File", `${path}/${directory}`, hashObjRes.hash);
-    }
-  }
-}
