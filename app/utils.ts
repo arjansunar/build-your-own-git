@@ -48,11 +48,10 @@ export function writeTree(currentPath: string) {
   const currentTreeEntries: TreeEntry[] = [];
   for (const file of fs.readdirSync(currentPath, { withFileTypes: true })) {
     if (IGNORED_FILES.includes(file.name)) {
-      return;
+      continue;
     }
-    const stats = fs.statSync(path.join(currentPath, file.name));
 
-    if (stats.isDirectory()) {
+    if (file.isDirectory()) {
       const res = writeTree(path.join(currentPath, file.name));
       if (res) {
         currentTreeEntries.push(
@@ -60,7 +59,10 @@ export function writeTree(currentPath: string) {
         );
       }
     }
-    if (stats.isFile()) {
+    if (file.isSymbolicLink()) {
+      throw new Error("Symbolic links are not supported");
+    }
+    if (file.isFile()) {
       const hashObjRes = hashObject(path.join(currentPath, file.name));
       const isExecutable = !!(
         fs.statSync(path.join(currentPath, file.name)).mode & 0o111

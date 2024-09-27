@@ -13,8 +13,6 @@ enum Commands {
   WriteTree = "write-tree",
 }
 
-
-
 function getFlag() {
   return args.at(1);
 }
@@ -42,8 +40,6 @@ function getFolderPath(hash: string) {
 function getFilePath(hash: string) {
   return `.git/objects/${getHashPrefix(hash)}/${getFileNameFromHash(hash)}`;
 }
-
-
 
 switch (command) {
   case Commands.Init:
@@ -106,10 +102,10 @@ switch (command) {
     }
     break;
   case Commands.WriteTree:
-    writeTree(process.cwd());
+    const _hash = writeTree(process.cwd());
+    process.stdout.write(_hash.hash);
 
     break;
   default:
     throw new Error(`Unknown command ${command}`);
 }
-
