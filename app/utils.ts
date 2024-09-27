@@ -128,26 +128,30 @@ export function getFilePath(hash: string) {
 function commitTreeHeader(size: number) {
   return `commit ${size}\0`;
 }
-function parentsHeader(parent: string) {
-  return `parent ${parent}`;
-}
 
-function authorAndComitterHeader() {
-  return `author Arjan <arjan@example.com> 1727449686 +0000\ncommitter Arjan <arjan@example.com> 1727449686 +0000`;
-}
 export function commitTreeString(
   treeSha: string,
   message: string,
   parent: string,
 ) {
-  let commitBody = Buffer.from(
-    `tree ${treeSha}\n${parentsHeader(parent)}\n${authorAndComitterHeader()}\n\n${message}`,
-  );
-  return `${commitTreeHeader(commitBody.length)}\n${commitBody}`;
+  const content = Buffer.concat([
+    Buffer.from(`tree ${treeSha}\n`),
+    parent ? Buffer.from(`parent ${parent}\n`) : Buffer.alloc(0),
+    Buffer.from(`author John Doe <john.doe@example.com> ${Date.now()} +0000\n`),
+    Buffer.from(
+      `committer John Doe <john.doe@example.com> ${Date.now()} +0000\n`,
+    ),
+    Buffer.from(`\n${message}\n`),
+  ]);
+  return content;
 }
 export function commitTree(treeSha: string, message: string, parent: string) {
   const hasher = createHash("sha1");
-  const blob = Buffer.from(commitTreeString(treeSha, message, parent));
+  const content = commitTreeString(treeSha, message, parent);
+  const blob = Buffer.concat([
+    Buffer.from(commitTreeHeader(content.length)),
+    content,
+  ]);
   const hash = hasher.update(blob).digest("hex").trim();
   fs.mkdirSync(getFolderPath(hash), { recursive: true });
   fs.writeFileSync(getFilePath(hash), zlib.deflateSync(blob));

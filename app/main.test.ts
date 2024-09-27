@@ -14,17 +14,11 @@ test("Parse out tree content", () => {
 });
 
 test("Test commit tree command", () => {
-  const output = commitTreeString(
-    "5b825dc642cb6eb9a060e54bf8d69288fbee4904",
-    "Second commit",
-    "3b18e512dba79e4c8300dd08aeb37f8e728b8dad",
-  );
   const hash = commitTree(
-    "5b825dc642cb6eb9a060e54bf8d69288fbee4904",
-    "Second commit",
-    "3b18e512dba79e4c8300dd08aeb37f8e728b8dad",
+    "9c339ece773f838a4862c8e79b5e921289e86828",
+    "monkey humpty yikes donkey humpty scooby",
+    "c58187b103ae3942fac796f0a2cc473b7e9841b2",
   );
 
-  console.log({ output, hash });
-  expect(true).toBe(true);
+  expect(hash).toBe("034421c21c4b1806af879db89d5047c4c3f93b6a");
 });
