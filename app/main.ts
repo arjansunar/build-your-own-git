@@ -113,8 +113,8 @@ switch (command) {
 
     break;
   case Commands.CommitTree:
-    const _treeSha = getPathOrSha();
-    const parentHash = args.at(2);
+    const _treeSha = args.at(1);
+    const parentHash = args.at(3);
     const message = args.at(5);
 
     if (!_treeSha) {
