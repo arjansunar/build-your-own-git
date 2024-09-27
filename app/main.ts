@@ -1,6 +1,11 @@
 import * as fs from "fs";
 import * as zlib from "zlib";
-import { parseTreeContentAndGetNames, writeTree, hashObject } from "./utils";
+import {
+  parseTreeContentAndGetNames,
+  writeTree,
+  hashObject,
+  commitTree,
+} from "./utils";
 
 const args = process.argv.slice(2);
 const command = args[0];
@@ -108,6 +113,21 @@ switch (command) {
 
     break;
   case Commands.CommitTree:
+    const _treeSha = getPathOrSha();
+    const parentHash = args.at(2);
+    const message = args.at(5);
+
+    if (!_treeSha) {
+      throw new Error(`No path or sha provided ${_treeSha}`);
+    }
+    if (!parentHash) {
+      throw new Error(`No parent hash provided ${parentHash}`);
+    }
+    if (!message) {
+      throw new Error(`No message provided ${message}`);
+    }
+    const res = commitTree(_treeSha, message, parentHash);
+    process.stdout.write(res);
     break;
   default:
     throw new Error(`Unknown command ${command}`);

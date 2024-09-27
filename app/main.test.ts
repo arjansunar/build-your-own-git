@@ -1,4 +1,9 @@
-import { parseTreeContentAndGetNames, writeTree } from "./utils";
+import {
+  commitTree,
+  commitTreeString,
+  parseTreeContentAndGetNames,
+  writeTree,
+} from "./utils";
 import { expect, test } from "bun:test";
 
 test("Parse out tree content", () => {
@@ -8,7 +13,12 @@ test("Parse out tree content", () => {
   expect(output).toBe("test.1\ntest.3\n");
 });
 
-test("Test write tree command", () => {
-  const output = writeTree("test-write-tree");
+test("Test commit tree command", () => {
+  const output = commitTreeString(
+    "5b825dc642cb6eb9a060e54bf8d69288fbee4904",
+    "Second commit",
+    "3b18e512dba79e4c8300dd08aeb37f8e728b8dad",
+  );
+  console.log({ output });
   expect(true).toBe(true);
 });

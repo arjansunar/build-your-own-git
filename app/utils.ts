@@ -124,3 +124,32 @@ export function getFolderPath(hash: string) {
 export function getFilePath(hash: string) {
   return `.git/objects/${getHashPrefix(hash)}/${getFileNameFromHash(hash)}`;
 }
+
+function commitTreeHeader(size: number) {
+  return `commit ${size}\0`;
+}
+function parentsHeader(parent: string) {
+  return `parent ${parent}`;
+}
+
+function authorAndComitterHeader() {
+  return `author Arjan <arjan@example.com> 1727449686 +0000\ncommitter Arjan <arjan@example.com> 1727449686 +0000`;
+}
+export function commitTreeString(
+  treeSha: string,
+  message: string,
+  parent: string,
+) {
+  let commitBody = Buffer.from(
+    `tree ${treeSha}\n${parentsHeader(parent)}\n${authorAndComitterHeader()}\n\n${message}`,
+  );
+  return `${commitTreeHeader(commitBody.length)}\n${commitBody}`;
+}
+export function commitTree(treeSha: string, message: string, parent: string) {
+  const hasher = createHash("sha1");
+  const blob = Buffer.from(commitTreeString(treeSha, message, parent));
+  const hash = hasher.update(blob).digest("hex").trim();
+  fs.mkdirSync(getFolderPath(hash), { recursive: true });
+  fs.writeFileSync(getFilePath(hash), zlib.deflateSync(blob));
+  return hash;
+}
